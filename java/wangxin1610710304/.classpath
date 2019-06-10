@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="C:/Users/lenovo/Downloads/jsoup-1.10.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/lenovo/Downloads/servlet-api.jar"/>
+	<classpathentry kind="lib" path="C:/Users/lenovo/Downloads/jsp-api-2.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/lenovo/Downloads/cdi-api-2.0.Beta1.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

@@ -1,0 +1,8 @@
+单词：banana	次数：3
+单词：orange	次数：3
+单词：apricot	次数：3
+单词：pineapple	次数：3
+单词：peach	次数：3
+单词：pear	次数：2
+单词：apple	次数：1
+单词：grape	次数：1

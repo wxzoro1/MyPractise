@@ -1,0 +1,1059 @@
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Graphics;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.border.LineBorder;
+
+
+
+/**
+ * <h1>多功能分布式三子棋游戏 - 客户端</h1>
+ * 
+ * @see TicTacToeConstant
+ * @see TicTacToeServer
+ */
+public class TicTacToeClient extends JFrame
+  implements
+   TicTacToeConstant,
+   ActionListener {
+
+ /**
+  * 缺省串行版本标识
+  */
+ private static final long serialVersionUID = 1L;
+
+ /**
+  * 窗口顶部的玩家基本信息栏文本
+  */
+ private JLabel infoLabel = new JLabel();
+
+ /**
+  * 窗口顶部的玩家基本信息栏面板
+  */
+ private JPanel infoPanel = new JPanel();
+
+ /**
+  * 窗口中间的棋盘面板
+  */
+ private JPanel gridPanel = new JPanel();
+
+ /**
+  * 窗口中间的功能面板
+  */
+ private JPanel optionPanel = new JPanel();
+
+ /**
+  * 窗口底部的玩家状态信息栏
+  */
+ private JLabel stateLabel = new JLabel();
+
+ /**
+  * 功能按钮：重开本局
+  */
+ private JButton newGameButton = new JButton("重开本局");
+
+ /**
+  * 功能按钮：悔棋
+  */
+ private JButton retractButton = new JButton("悔棋");
+
+ /**
+  * 功能按钮：认输
+  */
+ private JButton giveUpButton = new JButton("认输");
+
+ /**
+  * 功能按钮：结束
+  */
+ private JButton endGameButton = new JButton("结束");
+
+ /**
+  * 功能按钮：关于
+  */
+ private JButton aboutButton = new JButton("关于");
+
+ /**
+  * 保存所按下的按钮
+  */
+ private int currentOption;
+
+ /**
+  * 保存棋盘状态用于实现悔棋功能
+  */
+ private char[][][] lastBoard = new char[10][3][3];
+
+ /**
+  * 初始化棋盘的所有格子
+  */
+ private TicTacToeCell[][] ticTacToeCell = new TicTacToeCell[3][3];
+
+ /**
+  * 标识自己（X为玩家1，O为玩家2）
+  */
+ private char myToken = ' ';
+
+ /**
+  * 标识对方
+  */
+ private char otherToken = ' ';
+
+ /**
+  * 当棋盘格子状态改变时，变量表选中行号；当功能按键被触发时，变量表状态选中序号（处理请求或处理返回）
+  */
+ private int rowOrStateSelected;
+
+ /**
+  * 当棋盘格子状态改变时，变量表列号；当功能按键被触发时，变量表选项序号
+  */
+ private int columnOrOptionSelected;
+
+ /**
+  * 是否发送走棋信息
+  */
+ private boolean isSendStep;
+
+ /**
+  * 是否轮到自己走棋
+  */
+ private boolean myTurn = false;
+
+ /**
+  * 等待玩家选择下一步走棋
+  */
+ private boolean waiting = true;
+
+ /**
+  * 到服务器端的输入输出流
+  */
+ private DataInputStream serverInput;
+ private DataOutputStream serverOutput;
+
+ /**
+  * 是否已经开始
+  */
+ private boolean isBeginRun = false;
+
+ /**
+  * 是否继续游戏
+  */
+ private boolean continueToPlay = true;
+
+ /**
+  * 用于与服务器端连接的IP地址（默认为本地主机，具体由玩家确定）
+  */
+ private String host = "localhost";
+
+ /**
+  * 用于与服务器端连接的端口号信息
+  */
+ private int port = 55555;
+
+ /**
+  * <b>构造函数 - 创建客户端程序</b>
+  * 
+  * @see TicTacToeClient
+  * @see #joinGame()
+  * @param iniString
+  *            自定义客户端名称
+  */
+ public TicTacToeClient(String iniString) {
+  // TODO Auto-generated constructor stub
+
+  // 初始化窗口
+  Container container = getContentPane();
+
+  // 基本信息栏
+  infoPanel.add(infoLabel, BorderLayout.CENTER);
+  infoPanel.setBorder(new LineBorder(Color.black, 1));
+
+  // 棋盘
+  gridPanel.setLayout(new GridLayout(3, 3, 0, 0));
+  int i, j;
+  for (i = 0; i < 3; ++i) {
+   for (j = 0; j < 3; ++j) {
+    gridPanel.add(ticTacToeCell[i][j] = new TicTacToeCell(i, j));
+   }
+  }
+
+  // 功能选项栏
+  optionPanel.setLayout(new GridLayout(5, 1, 0, 0));
+  optionPanel.add(newGameButton);
+  optionPanel.add(retractButton);
+  optionPanel.add(giveUpButton);
+  optionPanel.add(endGameButton);
+  optionPanel.add(aboutButton);
+
+  // 窗口布局
+  container.add(optionPanel, BorderLayout.WEST);
+  container.add(infoPanel, BorderLayout.NORTH);
+  container.add(gridPanel, BorderLayout.CENTER);
+  container.add(stateLabel, BorderLayout.SOUTH);
+
+  // 显示窗口
+  setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+  setTitle(iniString);
+  setSize(360, 350);
+  setVisible(true);
+
+  // 为所有的按钮都设置监听器
+  newGameButton.addActionListener(this);
+  retractButton.addActionListener(this);
+  giveUpButton.addActionListener(this);
+  endGameButton.addActionListener(this);
+  aboutButton.addActionListener(this);
+
+  try {
+   // 与服务器端连接，加入棋盘开始游戏
+   joinGame();
+  } catch (Exception e) {
+   // TODO Auto-generated catch block
+   e.printStackTrace();
+  }
+ }
+
+ /**
+  * <b>加入新游戏</b>
+  * 
+  * @see #TicTacToeClient(String)
+  * @see #playGame()
+  * @throws IOException
+  * @throws UnknownHostException
+  * @throws InterruptedException
+  */
+ private void joinGame() throws UnknownHostException, IOException,
+   InterruptedException {
+  // 与玩家指定的服务器建立连接，默认与本机连接
+  host = JOptionPane.showInputDialog(null, "请输入服务器IP地址：", "localhost");
+  Socket connectSocket = new Socket(host, port);
+
+  // 创建到服务器的输入输出流
+  serverInput = new DataInputStream(connectSocket.getInputStream());
+  serverOutput = new DataOutputStream(connectSocket.getOutputStream());
+
+  // 开始游戏
+  playGame();
+ }
+
+ /**
+  * <b>开始游戏</b>
+  * 
+  * @see #joinGame()
+  * @throws IOException
+  * @throws InterruptedException
+  */
+ private void playGame() throws IOException, InterruptedException {
+  // 从服务器端自己是玩家1还是玩家2
+  boolean player = serverInput.readBoolean();
+
+  // 标识谁先手
+  boolean goFirst;
+
+  // 标识玩家1先后手的选择结果
+  int inputFlag;
+
+  // 玩家1
+  if (player == P1) {
+   myToken = 'X';
+   otherToken = 'O';
+
+   infoLabel.setText("玩家1 -> X");
+   stateLabel.setText("等待玩家2...");
+
+   // 接收通知，开始游戏
+   serverInput.readBoolean();
+
+   // 玩家1选择先后手
+   inputFlag = JOptionPane.showConfirmDialog(null,
+     "是否选择先手：\n是(Y) -> 先手\n否(N) -> 后手", "玩家1选择先后手",
+     JOptionPane.YES_NO_OPTION);
+
+   // 把玩家1的选择通知服务器
+   if (inputFlag == JOptionPane.YES_OPTION) {
+    serverOutput.writeBoolean(GO_FIRST_P1);
+   } else {
+    serverOutput.writeBoolean(GO_FIRST_P2);
+   }
+
+   // 服务器把玩家1的选择通知给两个游戏者
+   goFirst = serverInput.readBoolean();
+
+   // 状态栏显示先后手
+   if (goFirst == GO_FIRST_P1) {
+    stateLabel.setText("玩家2已进入，玩家1先手");
+
+    // 轮到自己
+    myTurn = true;
+   } else {
+    stateLabel.setText("玩家2已进入，玩家2先手");
+   }
+
+   // 玩家2
+  } else {
+
+   myToken = 'O';
+   otherToken = 'X';
+
+   infoLabel.setText("玩家2 -> O");
+   stateLabel.setText("等待玩家1选择先后手...");
+
+   // 服务器把玩家1的选择通知给两个游戏者
+   goFirst = serverInput.readBoolean();
+
+   // 状态栏显示先后手
+   if (goFirst == GO_FIRST_P1) {
+    stateLabel.setText("玩家1先手");
+   } else {
+    stateLabel.setText("玩家2先手");
+
+    // 轮到自己
+    myTurn = true;
+   }
+  }
+
+  // 初始化按钮状态
+  setButtonState();
+
+  // 正式开始游戏
+  isBeginRun = true;
+  while (continueToPlay) {
+
+   // 玩家1先手情况
+   if (goFirst == GO_FIRST_P1) {
+
+    // 玩家1
+    if (player == P1) {
+     // 等待玩家（自己）的下一步行动（走棋或点击功能按钮），下同
+     waitForPlayerAction();
+
+     // 将走棋信息或点击控制信息发送给服务器 端，下同
+     sendMoveOrOption();
+
+     // 从服务接收反馈信息（另一玩家的走棋信息或对选项请求的回应），下同
+     receiveInfoFromServer();
+
+     // 玩家2
+    } else {
+     receiveInfoFromServer();
+     waitForPlayerAction();
+     sendMoveOrOption();
+    }
+
+    // 玩家2先手情况
+   } else {
+
+    // 玩家1
+    if (player == P1) {
+     receiveInfoFromServer();
+     waitForPlayerAction();
+     sendMoveOrOption();
+
+     // 玩家2
+    } else {
+     waitForPlayerAction();
+     sendMoveOrOption();
+     receiveInfoFromServer();
+    }
+   }
+  }
+ }
+
+ /**
+  * <b>设置按钮状态 - 只有轮到玩家走棋才可以点击功能按钮</b>
+  * 
+  * @see #sendMoveOrOption()
+  * @see #receiveInfoFromServer()
+  */
+ private void setButtonState() {
+  if (myTurn) {
+   newGameButton.setEnabled(true);
+   retractButton.setEnabled(true);
+   giveUpButton.setEnabled(true);
+   endGameButton.setEnabled(true);
+  } else {
+   newGameButton.setEnabled(false);
+   retractButton.setEnabled(false);
+   giveUpButton.setEnabled(false);
+   endGameButton.setEnabled(false);
+  }
+ }
+
+ /**
+  * <b>等待玩家的下一步行动 - 走棋或点击功能按钮</b>
+  * 
+  * @see #playGame()
+  * @throws InterruptedException
+  */
+ private void waitForPlayerAction() throws InterruptedException {
+  while (waiting) {
+   Thread.sleep(50);
+  }
+
+  waiting = true;
+ }
+
+ /**
+  * <b>将走棋信息或点击控制信息发送给服务器端</b>
+  * 
+  * @see #playGame()
+  * @see #setButtonState()
+  * @see #storeBoard()
+  * @throws IOException
+  */
+ private void sendMoveOrOption() throws IOException {
+  // 发送行号或状态类型
+  serverOutput.writeInt(rowOrStateSelected);
+
+  // 发送列号或选项类型
+  serverOutput.writeInt(columnOrOptionSelected);
+
+  // 设置按钮状态
+  setButtonState();
+
+  // 如果发送的是走棋信息则保存棋盘状态（用于实现悔棋功能）
+  if (isSendStep) {
+   storeBoard();
+  }
+
+  if (rowOrStateSelected == RETURN_SELECTED) {
+   if (columnOrOptionSelected == RETURN_RETRACT_YES) {
+    // 将整个棋盘发送给服务器端
+    sendBoardToServer();
+   }
+  }
+ }
+
+ /**
+  * <b>从服务接收反馈信息</b>
+  * 
+  * @see #playGame()
+  * @see #receiveMove()
+  * @see #setButtonState()
+  * @throws IOException
+  */
+ private void receiveInfoFromServer() throws IOException {
+  // 获取游戏状态或选项状态
+  int status = serverInput.readInt();
+
+  // 玩家1胜利
+  if (status == WON_P1) {
+   continueToPlay = false;
+
+   if (myToken == 'X') {
+    stateLabel.setText("我胜了！游戏结束");
+   } else if (myToken == 'O') {
+    stateLabel.setText("我败了！游戏结束");
+    receiveMove();
+   }
+
+   // 玩家2胜利
+  } else if (status == WON_P2) {
+   continueToPlay = false;
+
+   if (myToken == 'O') {
+    stateLabel.setText("我胜了！游戏结束");
+   } else if (myToken == 'X') {
+    stateLabel.setText("我败了！游戏结束");
+    receiveMove();
+   }
+
+   // 平局
+  } else if (status == DRAW) {
+   continueToPlay = false;
+
+   stateLabel.setText("平分秋色！游戏结束");
+   if (myToken == 'O') {
+    receiveMove();
+   }
+
+   // 游戏继续
+  } else if (status == CONTINUE) {
+   receiveMove();
+
+   // 轮到自己下棋
+   stateLabel.setText("轮到我下棋...");
+   myTurn = true;
+
+   // 选项状态：处理对方的请求
+  } else if (status == OPTION_SELECTED) {
+   // 从服务器读入具体的选择内容
+   int option = serverInput.readInt();
+
+   // 处理选项
+   handleOption(option);
+
+   // 选项状态：处理从对方返回的对本方请求的回应
+  } else if (status == RETURN_SELECTED) {
+   // 从服务器读入具体的返回内容
+   int isAccept = serverInput.readInt();
+
+   // 处理返回
+   handleReturn(isAccept);
+  }
+
+  // 设置按钮状态
+  setButtonState();
+ }
+
+ /**
+  * <b>从服务器端获取对方的下一步走棋</b>
+  * 
+  * @see #receiveInfoFromServer()
+  * @see #storeBoard()
+  * @throws IOException
+  */
+ private void receiveMove() throws IOException {
+  int row = serverInput.readInt();
+  int column = serverInput.readInt();
+
+  // 更新棋盘状态并显示
+  ticTacToeCell[row][column].setToken(otherToken);
+
+  // 保存棋盘状态
+  storeBoard();
+ }
+
+ /**
+  * <b>处理选项信息</b>
+  * 
+  * @see #receiveInfoFromServer()
+  * @see #resetBoard()
+  * @see #retractBoard()
+  * @param option
+  *            选项信息
+  * @throws IOException
+  */
+ private void handleOption(int option) throws IOException {
+  switch (option) {
+   // 重开本局
+   case OPTION_NEWGAME :
+    int isRestart = JOptionPane.showConfirmDialog(null,
+      "对方请求重新开始，是否同意？", "请求重新开始", JOptionPane.YES_NO_OPTION);
+    if (isRestart == JOptionPane.YES_OPTION) {
+     int reGoFirst = (myToken == 'X') ? 2 : 1;
+     stateLabel.setText("同意对方请求，游戏重新开始，玩家" + reGoFirst + "先手");
+
+     // 清空棋盘
+     resetBoard();
+
+     // 生成返回信息
+     isRestart = RETURN_NEWGAME_YES;
+    } else {
+     isRestart = RETURN_NEWGAME_NO;
+    }
+    rowOrStateSelected = RETURN_SELECTED;
+    columnOrOptionSelected = isRestart;
+
+    // 发送返回信息
+    isSendStep = false;
+    waiting = false;
+    break;
+
+   // 悔棋
+   case OPTION_RETRACT :
+    int isRetract = JOptionPane.showConfirmDialog(null,
+      "对方请求悔棋，是否同意？", "请求悔棋", JOptionPane.YES_NO_OPTION);
+    if (isRetract == JOptionPane.YES_OPTION) {
+     stateLabel.setText("同意对方请求，返回上一回合状态并继续游戏");
+
+     // 恢复上一回合状态
+     retractBoard();
+
+     // 生成返回信息
+     isRetract = RETURN_RETRACT_YES;
+    } else {
+     isRetract = RETURN_RETRACT_NO;
+    }
+    rowOrStateSelected = RETURN_SELECTED;
+    columnOrOptionSelected = isRetract;
+
+    // 发送返回信息
+    isSendStep = false;
+    waiting = false;
+    break;
+
+   // 认输（无须对方得到对方同意）
+   case OPTION_GIVEUP :
+    continueToPlay = false;
+    myTurn = false;
+
+    stateLabel.setText("对方认输，我胜了！游戏结束");
+    break;
+
+   // 结束
+   case OPTION_ENDGAME :
+    int isEnd = JOptionPane.showConfirmDialog(null, "对方请求结束，是否同意？",
+      "请求结束", JOptionPane.YES_NO_OPTION);
+    if (isEnd == JOptionPane.YES_OPTION) {
+     stateLabel.setText("同意对方请求，游戏结束");
+
+     // 生成返回信息
+     isEnd = RETURN_ENDGAME_YES;
+    } else {
+     isEnd = RETURN_ENDGAME_NO;
+    }
+    rowOrStateSelected = RETURN_SELECTED;
+    columnOrOptionSelected = isEnd;
+
+    // 发送返回信息
+    isSendStep = false;
+    waiting = false;
+    break;
+
+   default :
+    break;
+  }
+ }
+
+ /**
+  * <b>处理返回信息</b>
+  * 
+  * @see #receiveInfoFromServer()
+  * @see #resetBoard()
+  * @see #retractBoard()
+  * @param isAccept
+  *            返回信息
+  * @throws IOException
+  */
+ private void handleReturn(int isAccept) throws IOException {
+  // 读取所请求的选项内容
+  switch (currentOption) {
+
+   // 重开本局
+   case OPTION_NEWGAME :
+    // 同意请求
+    if (isAccept == RETURN_NEWGAME_YES) {
+     continueToPlay = true;
+     myTurn = true;
+
+     // 清空棋盘
+     resetBoard();
+
+     int reGoFirst = (myToken == 'X') ? 1 : 2;
+     stateLabel.setText("对方同意请求，游戏重新开始，玩家" + reGoFirst + "先手");
+
+     // 不同意请求
+    } else {
+     // 恢复下棋状态
+     myTurn = true;
+
+     stateLabel.setText("对方不同意请求，游戏继续");
+    }
+    break;
+
+   // 悔棋
+   case OPTION_RETRACT :
+    if (isAccept == RETURN_RETRACT_YES) {
+     myTurn = true;
+
+     // 恢复上一回合状态
+     retractBoard();
+
+     stateLabel.setText("对方同意请求，返回上一回合状态并继续游戏");
+    } else {
+     // 恢复下棋状态
+     myTurn = true;
+
+     stateLabel.setText("对方不同意请求，游戏继续");
+    }
+    break;
+
+   // 结束
+   case OPTION_ENDGAME :
+    if (isAccept == RETURN_ENDGAME_YES) {
+     continueToPlay = false;
+     myTurn = false;
+
+     stateLabel.setText("对方同意请求，游戏结束");
+    } else {
+     // 恢复下棋状态
+     myTurn = true;
+
+     stateLabel.setText("对方不同意请求，游戏继续");
+    }
+    break;
+
+   default :
+    break;
+  }
+ }
+
+ /**
+  * <b>计算棋盘上有棋子的总格子数</b>
+  * 
+  * @see TicTacToeCell
+  * @see #storeBoard()
+  * @see #retractBoard()
+  * @return 棋盘上有棋子的总格子数
+  */
+ private int getNonBlankNumber() {
+  int i, j, sum = 0;
+  for (i = 0; i < 3; ++i) {
+   for (j = 0; j < 3; ++j) {
+    if (ticTacToeCell[i][j].getToken() != ' ') {
+     ++sum;
+    }
+   }
+  }
+  return sum;
+ }
+
+ /**
+  * <b>清空棋盘</b>
+  * 
+  * @see TicTacToeCell
+  * @see #handleOption(int)
+  * @see #handleReturn(int)
+  */
+ private void resetBoard() {
+  int i, j;
+  for (i = 0; i < 3; ++i) {
+   for (j = 0; j < 3; ++j) {
+    ticTacToeCell[i][j].setToken(' ');
+   }
+  }
+ }
+
+ /**
+  * <b>保存棋盘状态</b>
+  * 
+  * @see TicTacToeCell
+  * @see #sendMoveOrOption()
+  * @see #receiveMove()
+  * @see #getNonBlankNumber()
+  */
+ private void storeBoard() {
+  int sum = getNonBlankNumber();
+  int i, j;
+  for (i = 0; i < 3; ++i) {
+   for (j = 0; j < 3; ++j) {
+    lastBoard[sum][i][j] = ticTacToeCell[i][j].getToken();
+   }
+  }
+ }
+
+ /**
+  * <b>恢复到上一回合的棋盘状态</b>
+  * 
+  * @see TicTacToeCell
+  * @see #handleOption(int)
+  * @see #handleReturn(int)
+  * @see #getNonBlankNumber()
+  * @see #storeBoard()
+  */
+ private void retractBoard() {
+  int sum = getNonBlankNumber();
+  sum -= 2;
+  if (sum < 0) {
+   sum = 0;
+  }
+
+  int i, j;
+
+  if (sum != 0) {
+   for (i = 0; i < 3; ++i) {
+    for (j = 0; j < 3; ++j) {
+     ticTacToeCell[i][j].setToken(lastBoard[sum][i][j]);
+    }
+   }
+  } else {
+   for (i = 0; i < 3; ++i) {
+    for (j = 0; j < 3; ++j) {
+     ticTacToeCell[i][j].setToken(' ');
+    }
+   }
+  }
+
+  // 保存棋盘状态
+  storeBoard();
+ }
+
+ /**
+  * <b>将整个棋盘发送给服务器端</b>
+  * 
+  * @see TicTacToeCell
+  * @see #handleOption(int)
+  */
+ private void sendBoardToServer() throws IOException {
+  int i, j;
+  for (i = 0; i < 3; ++i) {
+   for (j = 0; j < 3; ++j) {
+    serverOutput.writeChar(ticTacToeCell[i][j].getToken());
+   }
+  }
+ }
+
+ /**
+  * <b>响应按钮点击事件</b>
+  * 
+  * @see #newGameResponser()
+  * @see #retractResponser()
+  * @see #giveUpResponser()
+  * @see #endGameResponser()
+  */
+ public void actionPerformed(ActionEvent e) {
+  // TODO Auto-generated method stub
+
+  // 设置游戏开始前按钮无效
+  if (!isBeginRun) {
+   return;
+  }
+
+  // 各种选项的处理
+  if (e.getSource() == newGameButton) {
+   newGameResponser();
+  } else if (e.getSource() == retractButton) {
+   retractResponser();
+  } else if (e.getSource() == giveUpButton) {
+   giveUpResponser();
+  } else if (e.getSource() == endGameButton) {
+   endGameResponser();
+  } else if (e.getSource() == aboutButton) {
+   JOptionPane.showMessageDialog(null,
+     "多功能分布式三子棋游戏  TicTacToe v1.01\nBy Johnsysu", "关于",
+     JOptionPane.INFORMATION_MESSAGE);
+  }
+ }
+
+ /**
+  * <b>处理重开本局</b>
+  * 
+  * @see #actionPerformed(ActionEvent)
+  */
+ private void newGameResponser() {
+  // 暂时不能下棋
+  myTurn = false;
+
+  stateLabel.setText("等待对方选择...");
+
+  // 生成选项信息，下同
+  rowOrStateSelected = OPTION_SELECTED;
+  columnOrOptionSelected = OPTION_NEWGAME;
+
+  // 保存选项信息，下同
+  currentOption = OPTION_NEWGAME;
+
+  // 发送选项信息，下同
+  isSendStep = false;
+  waiting = false;
+ }
+
+ /**
+  * <b>处理悔棋</b>
+  * 
+  * @see #actionPerformed(ActionEvent)
+  */
+ private void retractResponser() {
+  // 暂时不能下棋
+  myTurn = false;
+
+  stateLabel.setText("等待对方选择...");
+
+  rowOrStateSelected = OPTION_SELECTED;
+  columnOrOptionSelected = OPTION_RETRACT;
+
+  currentOption = OPTION_RETRACT;
+
+  isSendStep = false;
+  waiting = false;
+ }
+
+ /**
+  * <b>处理认输</b>
+  * 
+  * @see #actionPerformed(ActionEvent)
+  */
+ private void giveUpResponser() {
+  // 结束游戏
+  continueToPlay = false;
+  myTurn = false;
+
+  stateLabel.setText("我认输了！游戏结束");
+
+  rowOrStateSelected = OPTION_SELECTED;
+  columnOrOptionSelected = OPTION_GIVEUP;
+
+  currentOption = OPTION_GIVEUP;
+
+  isSendStep = false;
+  waiting = false;
+ }
+
+ /**
+  * <b>处理结束</b>
+  * 
+  * @see #actionPerformed(ActionEvent)
+  */
+ private void endGameResponser() {
+  // 暂时不能下棋
+  myTurn = false;
+
+  stateLabel.setText("等待对方选择...");
+
+  rowOrStateSelected = OPTION_SELECTED;
+  columnOrOptionSelected = OPTION_ENDGAME;
+
+  currentOption = OPTION_ENDGAME;
+
+  isSendStep = false;
+  waiting = false;
+ }
+
+ /**
+  * <h1>棋盘格子类 - 客户端内部类</h1>
+  * 
+  * @see TicTacToeClient
+  */
+ private class TicTacToeCell extends JPanel implements MouseListener {
+
+  /**
+   * 缺省串行版本标识
+   */
+  private static final long serialVersionUID = 1L;
+
+  /**
+   * 表示在棋盘上的位置：行
+   */
+  private int row;
+
+  /**
+   * 表示在棋盘上的位置：列
+   */
+  private int column;
+
+  /**
+   * 表示格子状态
+   */
+  private char token = ' ';
+
+  /**
+   * <b>构造函数 - 创建棋盘的一个格子</b>
+   * 
+   * @see TicTacToeCell
+   * @param row
+   *            格子所在行
+   * @param column
+   *            格子所在列
+   */
+  public TicTacToeCell(int row, int column) {
+   this.row = row;
+   this.column = column;
+
+   setBorder(new LineBorder(Color.black, 1));
+
+   // 使用鼠标监听器
+   addMouseListener(this);
+  }
+
+  /**
+   * <b>得到状态信息</b>
+   * 
+   * @see TicTacToeClient#getNonBlankNumber()
+   * @see TicTacToeClient#storeBoard()
+   * @see TicTacToeClient#sendBoardToServer()
+   * @return 状态信息
+   */
+  public char getToken() {
+   return token;
+  }
+
+  /**
+   * <b>设置状态信息</b>
+   * 
+   * @see TicTacToeClient#receiveMove()
+   * @see TicTacToeClient#resetBoard()
+   * @see TicTacToeClient#retractBoard()
+   * @see #mouseClicked(MouseEvent)
+   */
+  public void setToken(char c) {
+   token = c;
+
+   // 更新棋盘状态
+   repaint();
+  }
+
+  /**
+   * <b>显示走棋信息</b>
+   * 
+   * @see #setToken(char)
+   */
+  protected void paintComponent(Graphics g) {
+   super.paintComponent(g);
+
+   if (token == 'X') {
+    g.drawLine(10, 10, getWidth() - 10, getHeight() - 10);
+    g.drawLine(getWidth() - 10, 10, 10, getHeight() - 10);
+   } else if (token == 'O') {
+    g.drawOval(10, 10, getWidth() - 20, getHeight() - 20);
+   }
+  }
+
+  /**
+   * <b>响应鼠标点击事件</b>
+   * 
+   * @see #setToken(char)
+   */
+  public void mouseClicked(MouseEvent e) {
+   // 只有轮到自己且格子为空则才可以在该格子上下棋
+   if ((token == ' ') && myTurn) {
+    // 更新棋盘状态
+    setToken(myToken);
+
+    // 生成相应的走棋信息
+    rowOrStateSelected = row;
+    columnOrOptionSelected = column;
+
+    // 轮到对方下棋
+    myTurn = false;
+
+    stateLabel.setText("等待对方下棋...");
+
+    // 发送走棋信息给服务器端
+    isSendStep = true;
+    waiting = false;
+   }
+  }
+
+  public void mousePressed(MouseEvent e) {
+   // TODO: implement this java.awt.event.MouseListener method;
+  }
+
+  public void mouseReleased(MouseEvent e) {
+   // TODO: implement this java.awt.event.MouseListener method;
+  }
+
+  public void mouseEntered(MouseEvent e) {
+   // TODO: implement this java.awt.event.MouseListener method;
+  }
+
+  public void mouseExited(MouseEvent e) {
+   // TODO: implement this java.awt.event.MouseListener method;
+  }
+ }
+
+ /**
+  * <b>主函数 - 运行客户端程序</b>
+  * 
+  * @see #TicTacToeClient(String)
+  * @param args
+  */
+ public static void main(String[] args) {
+  // TODO Auto-generated method stub
+  new TicTacToeClient("多功能分布式三子棋游戏 TicTacToe - 客户端");
+ }
+}

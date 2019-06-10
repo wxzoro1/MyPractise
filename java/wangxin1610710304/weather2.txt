@@ -1,0 +1,5 @@
+16.5 23.5
+Tuesday 19.1 Wed 7.4 THUR.TEMP:22.8
+
+18.5 -1.8 14.9<-- Here is my data ! --Ally
+    14.9 :-)

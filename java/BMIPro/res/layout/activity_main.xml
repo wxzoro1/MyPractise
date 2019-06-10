@@ -1,0 +1,129 @@
+<?xml version = "1.0" encoding="utf-8"?>
+<LinearLayout 
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:orientation="vertical" >
+<!-- 标题 -->
+    <LinearLayout
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginTop="20.0dip"
+	android:gravity="center_horizontal"
+	android:orientation="horizontal" >
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="BMI计算器"
+			android:textSize="22.0dip"
+			android:textStyle="bold" />
+    </LinearLayout>
+<!-- 体重 -->
+    <LinearLayout
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:layout_marginTop="10.0dip"
+	android:orientation="horizontal" >
+		<TextView
+			android:layout_width="120.0dip"
+			android:layout_height="wrap_content"
+			android:layout_marginLeft="5.0dip"
+			android:text="请输入您的体重" />
+	          	<EditText
+		            android:id="@+id/weight"
+		            android:layout_width="150.0dip"
+		            android:layout_height="wrap_content"
+		            android:inputType="none" />
+	            <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="kg" />
+    </LinearLayout>
+<!-- 身高 -->
+    <LinearLayout
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:layout_marginTop="10.0dip"
+	android:orientation="horizontal" >
+		<TextView
+			android:layout_width="120.0dip"
+			android:layout_height="wrap_content"
+			android:layout_marginLeft="5.0dip"
+			android:text="请输入您的身高" />
+	          	<EditText
+		            android:id="@+id/height"
+		            android:layout_width="150.0dip"
+		            android:layout_height="wrap_content"
+		            android:inputType="number" />
+	            <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="cm" />
+    </LinearLayout>
+<!-- 计算 -->    
+    <LinearLayout
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal" 
+    android:gravity="center_horizontal">
+		<Button
+			android:layout_marginTop="20.0dip"
+			android:layout_width="200.0dip"
+			android:layout_height="wrap_content"
+			android:id="@+id/calculator"
+			android:text="计算 BMI" />
+    </LinearLayout>
+<!-- 结果 -->      
+	<LinearLayout
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:orientation="horizontal" 
+	android:gravity="center_horizontal">
+		<TextView android:layout_width="wrap_content"
+			android:layout_marginTop="10.0dip"
+			android:layout_height="wrap_content"
+			android:id="@+id/result"/>
+	</LinearLayout>
+	
+<!-- 标准表 -->      
+	<GridLayout
+    android:id="@+id/table"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:rowCount="5"
+    android:columnCount="2"
+    android:layout_gravity = "left">
+		<TextView android:text="分类"/>
+
+		<TextView
+		    android:layout_width="134dp"
+		    android:layout_gravity="fill_horizontal"
+		    android:text="		BMI范围" />
+
+		<TextView android:text="偏瘦"/>
+
+		<TextView
+		    android:layout_width="wrap_content"
+		    android:layout_gravity="fill_horizontal"
+		    android:text="		小于18.4" />
+
+		<TextView android:text="正常"/>
+
+		<TextView
+		    android:layout_width="wrap_content"
+		    android:layout_gravity="fill_horizontal"
+		    android:text="		18.5 ~ 23.9" />
+
+		<TextView android:text="过重"/>
+
+		<TextView
+		    android:layout_width="wrap_content"
+		    android:layout_gravity="fill_horizontal"
+		    android:text="		24.0 ~ 27.9" />
+
+       	<TextView android:text="肥胖"/>
+		<TextView android:text="		大于28.0"/>
+    </GridLayout>
+    
+</LinearLayout>
+

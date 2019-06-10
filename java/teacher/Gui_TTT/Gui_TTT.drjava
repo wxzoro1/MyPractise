@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<drjava version="drjava-20160913-225446">
+  <project autorefresh="false" build="cls/" manifest="" root="" work="">
+    <createjar file="Gui_TTT_Server.jar" flags="5"/>
+    <source>
+      <file active="true" name="src/TicTacToeServer.java" package="" timestamp="17-May-2019 14:44:38">
+        <select from="2665" to="2665"/>
+        <scroll column="2753" row="0"/>
+      </file>
+      <file name="src/TicTacToe/TicTacToeConstant.java" package="" timestamp="07-May-2018 01:08:22">
+        <select from="2665" to="2665"/>
+        <scroll column="2753" row="0"/>
+      </file>
+      <file name="src/TicTacToe/TicTacToeBoard.java" package="" timestamp="07-May-2018 01:07:50">
+        <select from="2665" to="2665"/>
+        <scroll column="2753" row="0"/>
+      </file>
+      <file name="src/TicTacToeClient.java" package="" timestamp="07-May-2018 01:08:50">
+        <select from="2665" to="2665"/>
+        <scroll column="2753" row="0"/>
+      </file>
+    </source>
+    <included/>
+    <excluded/>
+    <collapsed/>
+    <classpath/>
+    <breakpoints/>
+    <watches/>
+    <bookmarks/>
+    <preferences/>
+  </project>
+</drjava>
